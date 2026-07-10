@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { LensId, Phase, Status, Suggestion } from '../types'
 import { LENSES } from '../data/lenses'
 import { runReview } from '../data/api'
-import { getFileName, readParagraphs } from '../office/word'
+import { applyFindings, getFileName, readParagraphs, selectFinding, type WriteReport } from '../office/word'
 
 const DEFAULT_ENABLED: Record<LensId, boolean> = {
   orthografie: true,
@@ -15,13 +15,6 @@ const DEFAULT_ENABLED: Record<LensId, boolean> = {
 
 export type Filter = LensId | 'all'
 
-/** Outcome of the Office.js write-back (populated in Slice D). */
-export interface WriteResult {
-  applied: string[]
-  notFound: string[]
-  ambiguous: string[]
-}
-
 export function useReview() {
   const [phase, setPhase] = useState<Phase>('idle')
   const [enabled, setEnabled] = useState<Record<LensId, boolean>>(DEFAULT_ENABLED)
@@ -32,8 +25,9 @@ export function useReview() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [fileName, setFileName] = useState<string>('')
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [writeResult, setWriteResult] = useState<WriteResult | null>(null)
+  const [writeResult, setWriteResult] = useState<WriteReport | null>(null)
   const [writeError, setWriteError] = useState<string | null>(null)
+  const [busy, setBusy] = useState<'analyzing' | 'applying'>('analyzing')
 
   // Best-effort document name for the idle card (refreshed on each run).
   useEffect(() => {
@@ -61,8 +55,24 @@ export function useReview() {
 
   const statusOf = useCallback((id: string): Status => status[id] ?? 'pending', [status])
 
+  const suggestionsById = useMemo(
+    () => new Map<string, Suggestion>(suggestions.map((s) => [s.id, s])),
+    [suggestions],
+  )
+
+  // Navigate Word to the selected finding's span (best-effort, review phase only).
+  useEffect(() => {
+    if (phase !== 'review' || !selectedId) return
+    const s = suggestionsById.get(selectedId)
+    if (!s) return
+    void selectFinding(s.original).catch(() => {
+      /* navigation is best-effort — a span we can't locate simply doesn't scroll */
+    })
+  }, [phase, selectedId, suggestionsById])
+
   // --- run the engine over the live document ---
   const run = useCallback(async () => {
+    setBusy('analyzing')
     setPhase('scanning')
     setLoadError(null)
     setWriteResult(null)
@@ -101,11 +111,6 @@ export function useReview() {
       return null
     },
     [active, status],
-  )
-
-  const suggestionsById = useMemo(
-    () => new Map<string, Suggestion>(suggestions.map((s) => [s.id, s])),
-    [suggestions],
   )
 
   const decide = useCallback(
@@ -162,11 +167,23 @@ export function useReview() {
     })
   }, [active, suggestionsById])
 
-  const finish = useCallback(() => {
-    // Slice C: tally the decisions and show the summary. Slice D wires the
-    // Office.js tracked-change write-back here (populating writeResult).
-    setPhase('done')
-  }, [])
+  const finish = useCallback(async () => {
+    // Apply only the accepted findings, as native tracked changes, via Office.js.
+    const accepted = active
+      .filter((s) => (status[s.id] ?? 'pending') === 'accepted')
+      .map((s) => ({ id: s.id, original: s.original, suggestion: s.suggestion }))
+    setWriteError(null)
+    setBusy('applying')
+    setPhase('scanning') // brief "writing…" state while Word applies the edits
+    try {
+      const report = await applyFindings(accepted)
+      setWriteResult(report)
+      setPhase('done')
+    } catch (e) {
+      setWriteError(String(e instanceof Error ? e.message : e))
+      setPhase('done')
+    }
+  }, [active, status])
 
   const reset = useCallback(() => {
     setStatus({})
@@ -217,6 +234,7 @@ export function useReview() {
     loadError,
     writeResult,
     writeError,
+    busy,
   }
 }
 

@@ -67,9 +67,11 @@ exact camelCase shape the pane's `Suggestion` type already expects.
 **Write-back (pane → Word, via Office.js only).**
 Accepting findings does **not** call the server. When the attorney applies, the
 pane turns on Word's Track Changes and, for each accepted finding, searches the
-finding's paragraph for its verbatim `original` span and replaces it with the
-`suggestion`. The result is a native Word tracked revision in the live document —
-no file is written, nothing is round-tripped through Python.
+**whole document** for its verbatim `original` (the engine marks a finding
+`unique` only when it occurs exactly once) and replaces that single match with
+the `suggestion`. Anything that matches zero or more than once is reported, never
+guessed. The result is a native Word tracked revision in the live document — no
+file is written, nothing is round-tripped through Python.
 
 ## 4. Reused vs. new (and what stays untouched)
 
@@ -110,9 +112,12 @@ no file is written, nothing is round-tripped through Python.
   spelling/punctuation/grammar spans apply cleanly; a long consistency/citation
   span that exceeds the limit (or returns zero/multiple matches) is routed to the
   manual bucket rather than mis-applied. This is the main correctness guard.
-- **Paragraph-index alignment.** The pane sends `body.paragraphs` in order and the
-  engine indexes the same list, so a finding's `anchor.paraIndex` maps 1:1 back to a
-  Word paragraph — used to scope both navigation and the write-back search.
+- **Whole-document match, not paragraph index.** Navigation and write-back locate a
+  span by searching the whole document for its verbatim `original` (with `ignoreSpace`
+  to absorb the engine's whitespace normalization), relying on the engine's `unique`
+  = exactly-one-occurrence guarantee. This deliberately avoids `anchor.paraIndex`:
+  the engine skips empty paragraphs during ingest, so its paragraph indices do not
+  line up 1:1 with Word's `body.paragraphs`.
 - **Tracked-changes ingest bug is sidestepped.** Reading live text through Office.js
   bypasses the `python-docx` path that silently drops `<w:ins>/<w:del>` runs, so the
   add-in never proofreads a stale layer of a mid-revision document.

@@ -1,10 +1,31 @@
 /**
  * Office.js glue — the only module that talks to Word.
  *
- * Slice C uses just the read side: pull the open document's paragraph text so the
- * engine can analyze it. Navigation (select a finding's span) and the
- * tracked-changes write-back land in Slice D and will live here too.
+ * Read side (Slice C): pull the open document's paragraph text for analysis.
+ * Write side (Slice D): navigate to a finding, and apply accepted findings as
+ * native tracked changes.
+ *
+ * Locating a span: we search the **whole document** for the finding's verbatim
+ * `original`. The engine marks a finding `unique` only when `original` occurs
+ * exactly once, so a whole-document search returns exactly one range — no
+ * paragraph-index bookkeeping, and no risk of the empty-paragraph index drift
+ * between Word's `body.paragraphs` and the engine's normalized paragraph list.
+ * `ignoreSpace` absorbs the engine's collapsed-whitespace normalization vs. the
+ * raw document. Anything that isn't a single clean match is reported, never
+ * guessed.
  */
+
+/** Word's search matches up to ~255 characters; longer spans can't be located. */
+const MAX_SEARCH = 255
+
+/** Tolerate whitespace differences (engine normalizes runs of space to one). */
+const SEARCH_OPTS = { matchCase: true, ignoreSpace: true }
+
+export interface WriteReport {
+  applied: string[]
+  notFound: string[]
+  ambiguous: string[]
+}
 
 /** Read every paragraph's text from the open document, in document order. */
 export async function readParagraphs(): Promise<string[]> {
@@ -25,4 +46,65 @@ export function getFileName(): string {
     /* no host / not available — fall through to the generic label */
   }
   return 'Aktuelles Word-Dokument'
+}
+
+/** Scroll Word to a finding's span (best-effort — a unique span selects cleanly). */
+export async function selectFinding(original: string): Promise<void> {
+  if (!original || original.length > MAX_SEARCH) return
+  await Word.run(async (context) => {
+    const results = context.document.body.search(original, SEARCH_OPTS)
+    results.load('items')
+    await context.sync()
+    if (results.items.length > 0) {
+      results.items[0].select()
+      await context.sync()
+    }
+  })
+}
+
+/**
+ * Apply accepted findings as native tracked changes and return a coverage
+ * report. Track Changes is enabled for the duration and the document's prior
+ * tracking mode is restored afterward; already-inserted revisions stay tracked.
+ * A finding that is too long, unmatched, or matches more than once is reported
+ * (notFound / ambiguous), never applied.
+ */
+export async function applyFindings(
+  findings: { id: string; original: string; suggestion: string }[],
+): Promise<WriteReport> {
+  const report: WriteReport = { applied: [], notFound: [], ambiguous: [] }
+  await Word.run(async (context) => {
+    const doc = context.document
+    doc.load('changeTrackingMode')
+    await context.sync()
+
+    const prior = doc.changeTrackingMode
+    doc.changeTrackingMode = Word.ChangeTrackingMode.trackAll
+    await context.sync()
+
+    for (const f of findings) {
+      if (!f.original || f.original.length > MAX_SEARCH) {
+        report.notFound.push(f.id)
+        continue
+      }
+      const results = doc.body.search(f.original, SEARCH_OPTS)
+      results.load('items')
+      await context.sync()
+
+      const n = results.items.length
+      if (n === 0) {
+        report.notFound.push(f.id)
+      } else if (n > 1) {
+        report.ambiguous.push(f.id)
+      } else {
+        results.items[0].insertText(f.suggestion, Word.InsertLocation.replace)
+        report.applied.push(f.id)
+        await context.sync()
+      }
+    }
+
+    doc.changeTrackingMode = prior
+    await context.sync()
+  })
+  return report
 }

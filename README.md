@@ -14,8 +14,11 @@ local analysis bridge over `http://localhost:8000`. See
 ## Prerequisites
 
 - Node (tested with v24.17.0) and npm.
-- The engine repo checked out, with its add-in bridge running:
-  `python -m engine.serve_addin --port 8000` (needs `ANTHROPIC_API_KEY` in its env).
+- The engine repo checked out, with its add-in bridge running **from inside
+  `03_COM-engine`** (so the relative prompt-pack path resolves) — or pass
+  `--prompt-pack <path>`:
+  `python -m engine.serve_addin --port 8000`. Needs `ANTHROPIC_API_KEY` in its env,
+  or run with `--provider fake` for a keyless smoke test.
 
 ## First-time setup
 
