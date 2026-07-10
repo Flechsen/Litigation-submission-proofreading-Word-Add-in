@@ -155,6 +155,6 @@ writeback.py, serve.py   ← COM write-back — UNTOUCHED
   for the analysis bridge.
 - In the engine repo: `Lens_Prompts_German.txt` present (git-ignored) and
   `ANTHROPIC_API_KEY` set in the bridge process's environment.
-- Two local processes during development: the Vite dev server (this repo, the pane)
-  and `python -m engine.serve_addin` (engine repo, analysis). A later slice folds
-  these into one launcher.
+- Two local processes: the Vite dev server (this repo, the pane) and
+  `python -m engine.serve_addin` (engine repo, analysis). `start.ps1` (this repo)
+  launches both in one command.

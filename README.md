@@ -27,7 +27,20 @@ npm install
 npm run cert     # install the locally-trusted HTTPS dev certificate (one time)
 ```
 
-## Run (development)
+## Quick start (one command)
+
+```powershell
+.\start.ps1                 # or double-click start.cmd
+.\start.ps1 -Provider fake  # keyless smoke test (no ANTHROPIC_API_KEY needed)
+```
+
+`start.ps1` launches **both** servers in their own windows: the engine bridge (from
+the engine repo's `03_COM-engine`) and the Vite dev server (this repo). It assumes
+the engine repo is the sibling `..\RechtschreibungsTool\03_COM-engine`; override with
+`-EngineDir <path>` or `$env:SCHRIFTSATZ_ENGINE_DIR`. Run `npm install` + `npm run cert`
+once first (below). Then sideload once (below) and use the ribbon button.
+
+## Run (development, manually)
 
 ```bash
 npm run dev      # serves the pane at https://localhost:3000, proxies /api → :8000
