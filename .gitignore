@@ -1,0 +1,19 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Secrets / environment
+.env
+.env.*
+
+# office-addin-dev-certs output — NEVER commit private keys
+*.pem
+certs/
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db

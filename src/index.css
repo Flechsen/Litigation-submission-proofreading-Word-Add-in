@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  color: #15202b;
+  /* paper — the pane fills the Word task-pane webview */
+  background: #fbfaf7;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+*:focus-visible {
+  outline: 2px solid #b0822a;
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+/* slim, app-like scrollbars */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #c4cad2 transparent;
+}
+.scroll-thin::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #c4cad2;
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+.scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: #aab2bd;
+  background-clip: content-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
