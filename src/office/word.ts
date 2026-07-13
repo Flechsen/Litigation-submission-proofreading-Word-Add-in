@@ -48,15 +48,27 @@ export function getFileName(): string {
   return 'Aktuelles Word-Dokument'
 }
 
-/** Scroll Word to a finding's span (best-effort — a unique span selects cleanly). */
+/** Scroll Word to a finding's span (best-effort — a unique span selects cleanly).
+ *
+ * Tries the verbatim (case-sensitive) match first, then a case-insensitive
+ * retry so a lead-capitalization difference still navigates. NOTE: neither
+ * absorbs a non-breaking-space mismatch — the engine normalizes NBSP/narrow-NBSP
+ * to a plain space, and Word's `ignoreSpace` does not treat NBSP as space, so an
+ * `original` spanning an NBSP (common in German legal text: `§ 823`, `S. 185`)
+ * finds nothing here. That deeper anchoring fix is tracked as its own issue. */
 export async function selectFinding(original: string): Promise<void> {
   if (!original || original.length > MAX_SEARCH) return
   await Word.run(async (context) => {
-    const results = context.document.body.search(original, SEARCH_OPTS)
-    results.load('items')
-    await context.sync()
-    if (results.items.length > 0) {
-      results.items[0].select()
+    const find = async (matchCase: boolean) => {
+      const r = context.document.body.search(original, { matchCase, ignoreSpace: true })
+      r.load('items')
+      await context.sync()
+      return r.items
+    }
+    let items = await find(true)
+    if (items.length === 0) items = await find(false)
+    if (items.length > 0) {
+      items[0].select()
       await context.sync()
     }
   })
