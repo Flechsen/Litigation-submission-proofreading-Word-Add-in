@@ -1,5 +1,4 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Seal } from './ui'
 import { Idle } from './pane/Idle'
 import { Scanning } from './pane/Scanning'
 import { Review } from './pane/Review'
@@ -10,8 +9,8 @@ export function TaskPane({ api }: { api: ReviewApi }) {
   return (
     <div className="flex h-full w-full flex-col bg-white">
       {/* pane title strip — Word provides the surrounding chrome */}
-      <div className="flex h-11 shrink-0 items-center gap-2 border-b border-hairline bg-[#faf9f8] px-3">
-        <Seal size={20} />
+      <div className="flex shrink-0 flex-col items-center gap-1.5 border-b border-hairline bg-[#faf9f8] px-3 py-2.5">
+        <img src="/assets/logo-bdpe.png" alt="BDPE" className="h-7 w-auto" />
         <span className="font-serif text-[13px] font-semibold text-ink">Schriftsatzprüfung</span>
       </div>
 
