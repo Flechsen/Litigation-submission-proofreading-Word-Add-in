@@ -82,14 +82,17 @@ export function useReview() {
     try {
       const paragraphs = await readParagraphs()
       setFileName(getFileName())
-      const findings = await runReview(paragraphs)
+      // Only the enabled (non-deferred) lenses are sent — the engine runs exactly
+      // those, so a lens toggled off costs no API time/tokens (not just hidden).
+      const lenses = LENSES.filter((l) => enabled[l.id] && !l.deferred).map((l) => l.id)
+      const findings = await runReview(paragraphs, lenses)
       setSuggestions(findings)
       setPhase('review')
     } catch (e) {
       setLoadError(String(e instanceof Error ? e.message : e))
       setPhase('idle')
     }
-  }, [])
+  }, [enabled])
 
   // --- actions ---
   const toggleLens = useCallback((id: LensId) => {
