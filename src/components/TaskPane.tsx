@@ -9,9 +9,13 @@ export function TaskPane({ api }: { api: ReviewApi }) {
   return (
     <div className="flex h-full w-full flex-col bg-white">
       {/* pane title strip — Word provides the surrounding chrome */}
-      <div className="flex shrink-0 flex-col items-center gap-1.5 border-b border-hairline bg-[#faf9f8] px-3 py-2.5">
-        <img src="/assets/logo-bdpe.png" alt="BDPE" className="h-7 w-auto" />
-        <span className="font-serif text-[13px] font-semibold text-ink">Schriftsatzprüfung</span>
+      <div className="flex shrink-0 flex-col items-center gap-1.5 border-b border-hairline bg-[url('/assets/albert1.jpg')] bg-cover bg-center px-3 py-2.5">
+        {/* logo + title sit on a translucent plate — the photo is dark, so the
+            dark-ink wordmark and text need a light backing to stay legible */}
+        <div className="flex flex-col items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 shadow-sm backdrop-blur-sm">
+          <img src="/assets/logo-bdpe.png" alt="BDPE" className="h-7 w-auto" />
+          <span className="font-serif text-[13px] font-semibold text-ink">Schriftsatzprüfung</span>
+        </div>
       </div>
 
       <div className="relative min-h-0 flex-1">

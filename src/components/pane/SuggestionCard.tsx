@@ -74,8 +74,7 @@ export function SuggestionCard({
       )}
     >
       <div className="mb-2 flex items-center gap-2">
-        <LensBadge lens={lens} />
-        <span className="text-[12px] font-medium text-ink/80">{lens.name}</span>
+        <LensBadge lens={lens} variant="full" />
         {s.rn != null && (
           <span className="ml-auto rounded-md bg-mist px-1.5 py-0.5 font-mono text-[10.5px] text-muted">
             Rn.&nbsp;{s.rn}

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { AlertTriangle, ArrowRight, Check, CheckCheck, Info, MapPin, RotateCcw, X } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Check, CheckCheck, Info, RotateCcw, X } from 'lucide-react'
 import { LENSES, LENS_MAP } from '../../data/lenses'
 import { LensBadge, cx } from '../ui'
 import { SuggestionCard } from './SuggestionCard'
@@ -70,7 +70,7 @@ export function Review({ api }: { api: ReviewApi }) {
           </Chip>
           {activeLenses.map((l) => (
             <Chip key={l.id} active={api.filter === l.id} onClick={() => api.setFilter(l.id)}>
-              {l.monogram} {api.finalCounts[l.id]}
+              {l.name} {api.finalCounts[l.id]}
             </Chip>
           ))}
         </div>
@@ -104,10 +104,9 @@ export function Review({ api }: { api: ReviewApi }) {
         {manual.length > 0 && (
           <div className="mt-4">
             <div className="mb-2 flex items-center gap-1.5">
-              <MapPin size={12} className="text-brass" />
-              <span className="text-[11.5px] font-semibold text-ink">Zur manuellen Prüfung</span>
-              <span className="ml-auto rounded-full bg-mist px-2 py-0.5 font-mono text-[10px] text-muted">
-                {manual.length}
+              <AlertTriangle size={16} className="shrink-0 text-reject" />
+              <span className="text-[14px] font-semibold text-ink">
+                Fehler, die manuell geprüft werden müssen
               </span>
             </div>
             <p className="mb-2.5 text-[11px] leading-relaxed text-faint">
@@ -154,11 +153,16 @@ function ConflictCard({ members, api }: { members: Suggestion[]; api: ReviewApi 
   const allRejected = members.every((m) => api.statusOf(m.id) === 'rejected')
   const resolved = anyAccepted || allRejected
   const isSelected = members.some((m) => api.selectedId === m.id)
+  // Clicking the card itself (header, padding — anywhere outside a member row)
+  // should still navigate/highlight in Word. Default to whichever member is
+  // already selected, else the first member of the cluster.
+  const selectedMemberId = members.find((m) => api.selectedId === m.id)?.id ?? members[0]?.id
 
   return (
     <div
+      onClick={() => selectedMemberId && api.setSelectedId(selectedMemberId)}
       className={cx(
-        'rounded-xl border bg-white shadow-card transition',
+        'cursor-pointer rounded-xl border bg-white shadow-card transition',
         isSelected ? 'border-brass/50 ring-2 ring-brass/25' : 'border-hairline hover:border-brass/30',
       )}
     >
@@ -192,7 +196,10 @@ function ConflictCard({ members, api }: { members: Suggestion[]; api: ReviewApi 
           return (
             <div
               key={m.id}
-              onClick={() => api.setSelectedId(m.id)}
+              onClick={(e) => {
+                e.stopPropagation()
+                api.setSelectedId(m.id)
+              }}
               className={cx(
                 'cursor-pointer py-2.5 transition',
                 isAccepted && 'opacity-100',
@@ -210,18 +217,7 @@ function ConflictCard({ members, api }: { members: Suggestion[]; api: ReviewApi 
                     <X size={13} />
                   </span>
                 )}
-                {st === 'pending' && (
-                  <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full border border-hairline bg-white" />
-                )}
-                <LensBadge lens={lens} active={mSelected} />
-                <span
-                  className={cx(
-                    'text-[11.5px] font-medium',
-                    isAccepted ? 'text-accept' : isRejected ? 'text-muted' : 'text-ink/80',
-                  )}
-                >
-                  {lens.name}
-                </span>
+                <LensBadge lens={lens} active={mSelected} variant="full" />
               </div>
 
               <div className={cx('rounded-lg p-2', isAccepted ? 'bg-accept/8' : 'bg-mist/50')}>
@@ -281,7 +277,8 @@ function ConflictCard({ members, api }: { members: Suggestion[]; api: ReviewApi 
       {!allRejected && (
         <div className="border-t border-hairline px-3 py-2">
           <button
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation()
               for (const m of members) {
                 if (api.statusOf(m.id) !== 'rejected') api.reject(m.id)
               }
@@ -301,7 +298,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
     <button
       onClick={onClick}
       className={cx(
-        'rounded-full border px-2.5 py-1 font-mono text-[11px] transition',
+        'rounded-full border px-2.5 py-1 text-[11px] font-medium transition',
         active
           ? 'border-brass bg-brass text-white'
           : 'border-hairline bg-white text-muted hover:border-brass/40 hover:text-ink',
@@ -323,8 +320,7 @@ function ManualCard({ s, selected, onSelect }: { s: Suggestion; selected: boolea
       )}
     >
       <div className="mb-2 flex items-center gap-2">
-        <LensBadge lens={lens} />
-        <span className="text-[12px] font-medium text-ink/80">{lens.name}</span>
+        <LensBadge lens={lens} variant="full" />
         {s.rn != null && (
           <span className="ml-auto rounded-md bg-mist px-1.5 py-0.5 font-mono text-[10.5px] text-muted">
             Rn.&nbsp;{s.rn}

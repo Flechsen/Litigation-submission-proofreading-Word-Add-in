@@ -38,12 +38,30 @@ export function LensBadge({
   lens,
   active = false,
   size = 22,
+  variant = 'monogram',
 }: {
   lens: LensId | Lens
   active?: boolean
   size?: number
+  /** 'full' spells out the lens name inside the box (report cards, where the
+   *  box is the only place the name appears — no adjacent name label needed). */
+  variant?: 'monogram' | 'full'
 }) {
   const l = typeof lens === 'string' ? LENS_MAP[lens] : lens
+
+  if (variant === 'full') {
+    return (
+      <span
+        className={cx(
+          'shrink-0 whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[10.5px] font-medium leading-none',
+          active ? 'border-brass/30 bg-brass text-paper' : 'border-hairline bg-mist text-muted',
+        )}
+      >
+        {l.name}
+      </span>
+    )
+  }
+
   return (
     <span
       style={{ width: size, height: size, fontSize: Math.round(size * 0.42) }}
